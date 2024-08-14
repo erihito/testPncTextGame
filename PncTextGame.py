@@ -148,7 +148,6 @@ def main(): #메인 메뉴 함수
             print("\033[31m", end="")
             print(f"플레이어 1이 {player1.name}을(를) 선택했습니다.")
             print("\033[0m", end="")
-            
             print("\033[34m", end="") #플레이어02 = 파란색
             print("플레이어 2의 캐릭터 선택:")
             print("\033[0m", end="")
