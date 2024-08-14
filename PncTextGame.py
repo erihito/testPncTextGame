@@ -85,7 +85,6 @@ def battleStart(player01, player02): #전투 시작
         if not player02.isalive():
             print("\033[32m" + "-" * 50 + "\033[0m")
             print(f"\033[31m{player01.name}의 승리!\033[0m")
-            print("\033[32m" + "=" * 50 + "\033[0m")
             break
         print("\033[31m", end="")
         print(player01) #플레이어 스탯 출력
@@ -98,7 +97,6 @@ def battleStart(player01, player02): #전투 시작
         if not player01.isalive():
             print("\033[32m" + "-" * 50 + "\033[0m")
             print(f"\033[34m{player02.name}의 승리!\033[0m")
-            print("\033[32m" + "=" * 50 + "\033[0m")
             break
         print("\033[31m", end="")
         print(player01) #플레이어 스탯 출력
@@ -141,6 +139,7 @@ def main(): #메인 메뉴 함수
         
         choice = input("메뉴 선택: ")
         if choice == "1":
+            print("\033[32m" + "=" * 50 + "\033[0m")
             print("\033[31m", end="") #플레이어01 = 빨간색
             print("플레이어 1의 인형 선택:")
             print("\033[0m", end="")
@@ -149,6 +148,7 @@ def main(): #메인 메뉴 함수
             print(f"플레이어 1이 {player1.name}을(를) 선택했습니다.")
             print("\033[0m", end="")
             print("\033[34m", end="") #플레이어02 = 파란색
+            print("\033[32m" + "=" * 50 + "\033[0m")
             print("플레이어 2의 캐릭터 선택:")
             print("\033[0m", end="")
             player2 = selectDoll() #플레이어02 캐릭터 선택
@@ -165,7 +165,7 @@ def main(): #메인 메뉴 함수
 
 #인형 리스트             (인형 이름, 체력     , 연산력 , 공격력  , 방어력 , 치명률 , 치명피해, 회피율, 스킬 쿨타임)
 wr01_Sol     = PlayerDoll("솔"      , _hp=800 , _mp=300, _atk=110, _dfs=20, _crt=20, _crd=50 , _avd=5 , _cool=3)
-gd01_Croque  = PlayerDoll("크로크"  , _hp=1000, _mp=300, _atk=85 , _dfs=55, _crt=15, _crd=50 , _avd=10, _cool=3)
+gd01_Croque  = PlayerDoll("크로크"  , _hp=1000, _mp=300, _atk=80 , _dfs=55, _crt=15, _crd=50 , _avd=10, _cool=3)
 sn01_Clukay  = PlayerDoll("클루카이", _hp=750 , _mp=400, _atk=100, _dfs=10, _crt=30, _crd=100, _avd=5 , _cool=3)
 sp01_Luna    = PlayerDoll("보름"    , _hp=700 , _mp=500, _atk=90 , _dfs=15, _crt=50, _crd=80 , _avd=25, _cool=3)
 md01_Persica = PlayerDoll("페르시카", _hp=600 , _mp=700, _atk=70 , _dfs=10, _crt=10, _crd=100, _avd=10, _cool=3)
