@@ -1,239 +1,432 @@
+import pygame
+import sys
 import random as rd
 import copy
 
+########################################파이 게임 및 텍스트#########################################
+####################################################################################################
+# 파이게임 초기화
+pygame.init()
+# 색상 정의 (RGB 값)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 100, 100)
+GREEN = (100, 255, 100)
+BLUE = (100, 100, 255)
+# 폰트 설정
+font50 = pygame.font.SysFont("malgungothic", 50)
+font40 = pygame.font.SysFont("malgungothic", 40)
+font30 = pygame.font.SysFont("malgungothic", 30)
+font20 = pygame.font.SysFont("malgungothic", 20)
+# 텍스트 
+txt_menu_title = font50.render("뉴럴 클라우드 정실 결정전", True, WHITE)
+txt_menu_start = font40.render("게임 시작", True, WHITE)
+txt_menu_quit = font40.render("게임 종료", True, WHITE)
+txt_menu_select = font40.render("▶", True, WHITE)
+txt_menu_ctrl = font20.render("조작 : 방향키, 선택 : Z, 취소 : X", True, WHITE)
+txt_test = font50.render("test text", True, WHITE)
+txt_select_doll = font40.render("정실 결정전에 참가할 인형을 선택하세요.", True, WHITE)
+txt_select_cursor = font40.render("◀                ▶", True, WHITE)
+txt_select_player01 = font40.render("Player1", True, RED)
+txt_select_player02 = font40.render("Player2", True, BLUE)
+txt_select_finish = font40.render("전투 시작", True, WHITE)
+txt_battle_act01 = font30.render("일반 공격", True, WHITE)
+txt_battle_act02 = font30.render("고유 스킬", True, WHITE)
+txt_battle_act03 = font30.render("궁극 스킬", True, WHITE)
+txt_battle_act04 = font30.render("턴 종료", True, WHITE)
+def statDisplay(player, pnum):
+    #txt_name = player.
+
+    pass
+battleLog = []
+# 화면 설정
+window_width = 1150
+window_height = 720
+screen = pygame.display.set_mode((window_width+50, window_height))
+pygame.display.set_caption("뉴럴 클라우드 정실 결정전")
+####################################################################################################
+########################################파이 게임 및 텍스트#########################################
+
+########################################게임 시스템 관련############################################
+####################################################################################################
+damage = 0
 class PlayerDoll:
-    def __init__(self, _name, _hp, _mp, _atk, _dfs, _crt, _crd, _avd, _cool): #스탯 초기화
+    def __init__(self, _name, _hp, _mp, _atk, _dfs, _crt, _crd, _avd, _dmg, _prt, _cool): #스탯 초기화
         self.name = _name #인형의 이름
         self.maxhp = _hp #인형의 최대 체력
         self.hp = _hp #인형의 현재 체력
+        self.maxmp = _mp #인형의 최대 체력
         self.mp = _mp #인형의 연산력
         self.atk = _atk #공격력
+        self.defaultatk = _atk # 원본 공격력
         self.dfs = _dfs #방어력
+        self.defaultdfs = _dfs # 원본 방어력
         self.crt = _crt #치명률
-        self.defaultcrt = _crt #원래 치명률 값
+        self.defaultcrt = _crt # 원본 치명률
         self.crd = _crd #치명피해
+        self.defaultcrd = _crd # 원본 치명피해
         self.avd = _avd #회피율
+        self.defaultavd = _avd # 원본 회피율
+        self.dmg = _dmg #주피증
+        self.defaultdmg = _dmg # 원본 주피증
+        self.prt = _prt #받피감
+        self.defaultprt = _prt # 원본 받피감
         self.cool = _cool #스킬 쿨타임
         self.defaultcool = _cool #초기 쿨타임 값
         self.buffcheck = False #버프 상태 체크
         self.buffduration = 0 #버프 지속 시간
-
-    def attack(self, other, color): #일반 공격 메소드(본인, 공격대상, 플레이어 컬러)
-        #일반 공격 관련 난수 결정
+        self.nuffcheck = False #디버프 상태 체크
+        self.nuffduration = 0 #디버프 지속 시간
+    def attack(self, other, color):
+        global damage
         crtnan = rd.random() * 100 #치명률
         avdnan = rd.random() * 100 #회피율
-        damage = int(self.atk * (0.9 + rd.random() * 0.2)) #공격력의 90%~110% 사이의 랜덤 데미지
-        print("\033[32m" + "-" * 15 + " 일반 공격 결과 " + "-" * 15 + "\033[0m")
+        damage = int((self.atk * (0.9 + rd.random() * 0.2))) #공격력의 90%~110% 사이의 랜덤 데미지
+        print("-" * 15 + " 일반 공격 결과 " + "-" * 15)
         if avdnan < other.avd: #회피 판정
-            print(f"{color}{self.name}의 공격은 빗나갔다...\033[0m")
-            print("\033[32m" + "-" * 15 + " 현재 인형 스탯 " + "-" * 15 + "\033[0m")
+            print(f"{self.name}의 공격은 빗나갔다...")
+            battleLog.append(font30.render(f"{self.name}의 공격은 빗나갔다...", True, color))
+            print("-" * 15 + " 현재 인형 스탯 " + "-" * 15)
             return
         if crtnan < self.crt: #치명타 판정
-            damage = int(damage * (1 + self.crd/100)) #치명타 피해 계산(치명타는 방어력을 관통)
-            if damage < 0: #최소 데미지 보정
-                damage = 1
+            damage = int((damage * (1 + self.crd / 100)) * (1 + self.dmg / 100) * (1- other.prt / 100))#치명타 피해 계산(치명타는 방어력을 관통)
+            mindam = damage * 0.05
+            if damage < mindam: #최소 데미지 보정
+                damage = mindam
             other.hp -= damage #데미지만큼 공격대상 체력 차감
-            print(f"{color}크리티컬 히트! {self.name}은 {other.name}에게 {damage}데미지를 입혔다!\033[0m") #데미지 출력
+            print(f"크리티컬 히트! {self.name}은 {other.name}에게 {damage}데미지를 입혔다!") #데미지 출력
+            battleLog.append(font30.render(f"크리티컬 히트! {self.name}의 공격은 {other.name}에게 {damage}의 데미지를 입혔다!", True, color))
         else : #평타 판정
-            damage -= other.dfs #피해 계산
-            if damage < 0: #최소 데미지 보정
-                damage = 1
+            damage = int((damage - other.dfs) * (1 + self.dmg / 100) * (1- other.prt / 100)) #피해 계산
+            mindam = damage * 0.05
+            if damage < mindam: #최소 데미지 보정
+                damage = mindam
             other.hp -= damage #데미지만큼 공격대상 체력 차감
-            print(f"{color}{self.name}은 {other.name}에게 {damage}데미지를 입혔다.\033[0m") #데미지 출력
+            print(f"{self.name}은 {other.name}에게 {damage}데미지를 입혔다.") #데미지 출력
+            battleLog.append(font30.render(f"{self.name}의 공격은 {other.name}에게 {damage}데미지를 입혔다.", True, color))
         if self.isalive() and other.isalive(): #생존여부 체크
-            print("\033[32m" + "-" * 15 + " 현재 인형 스탯 " + "-" * 15 + "\033[0m")
+            print("-" * 15 + " 현재 인형 스탯 " + "-" * 15)
+            print(self)
+            print(other)
+            print("-" * 50)
             return
-        
     def passiveSkill(self):
-        if self.name == "솔":
-            self.hp += 10  # 예: 매 턴 체력 회복
-            print(f"{self.name}의 패시브 스킬 발동! 체력이 10 회복되었다.")
-        elif self.name == "크로크":
-            self.dfs += 2  # 예: 방어력 증가
-            print(f"{self.name}의 패시브 스킬 발동! 방어력이 2 증가했다.")
-        elif self.name == "보름":
-            self.crd += 2  # 예: 방어력 증가
-            print(f"{self.name}의 패시브 스킬 발동! 치명 데미지가 2 증가했다.")
+        # if self.name == "솔":
+        #     self.hp += 10  # 예: 매 턴 체력 회복
+        #     print(f"{self.name}의 패시브 스킬 발동! 체력이 10 회복되었다.")
+        # elif self.name == "크로크":
+        #     self.dfs += 2  # 예: 방어력 증가
+        #     print(f"{self.name}의 패시브 스킬 발동! 방어력이 2 증가했다.")
+        # elif self.name == "보름":
+        #     self.crd += 2  # 예: 방어력 증가
+        #     print(f"{self.name}의 패시브 스킬 발동! 치명 데미지가 2 증가했다.")
         # 다른 캐릭터에 대한 패시브 스킬 구현
         pass
-    def activeSkill(self, other, color):
-        print("\033[32m" + "-" * 15 + " 스킬 사용 결과 " + "-" * 15 + "\033[0m")
-        if self.cool == 0:
-            if self.name == "솔":
-                damage = self.atk * 2  # 예: 공격력의 2배 데미지
-                other.hp -= damage
-                print(f"{color}{self.name}의 사!자!열!화!참! {other.name}에게 {damage} 데미지를 입혔다.\033[0m")
-            elif self.name == "크로크":
-                self.hp += 200  # 예: 체력 회복
-                print(f"{color}{self.name}의 이지스의 방패 발동. 보호막을 200 획득했다.\033[0m")
-            elif self.name == "보름":
-                print(f"{color}{self.name}이 추적의 룬을 사용. 다음 2턴간 치명타가 상승한다.\033[0m")
-                self.crt += 50  # 치명률 30 증가
-                self.buffcheck = True  # 버프 활성화
-                self.buffduration = 3   # 버프 지속 시간 3턴
-            self.cool = self.defaultcool  # 스킬 사용 후 쿨타임 초기화
+    def activeSkill(self, other):
+        # print("\033[32m" + "-" * 15 + " 스킬 사용 결과 " + "-" * 15 + "\033[0m")
+        # if self.cool == 0:
+        #     if self.name == "솔":
+        #         damage = self.atk * 2  # 예: 공격력의 2배 데미지
+        #         other.hp -= damage
+        #         print(f"{color}{self.name}의 사!자!열!화!참! {other.name}에게 {damage} 데미지를 입혔다.\033[0m")
+        #     elif self.name == "크로크":
+        #         self.hp += 200  # 예: 체력 회복
+        #         print(f"{color}{self.name}의 이지스의 방패 발동. 보호막을 200 획득했다.\033[0m")
+        #     elif self.name == "보름":
+        #         print(f"{color}{self.name}이 추적의 룬을 사용. 다음 2턴간 치명타가 상승한다.\033[0m")
+        #         self.crt += 50  # 치명률 30 증가
+        #         self.buffcheck = True  # 버프 활성화
+        #         self.buffduration = 3   # 버프 지속 시간 3턴
+        #     self.cool = self.defaultcool  # 스킬 사용 후 쿨타임 초기화
             # 이하 다른 캐릭터에 대한 액티브 스킬 구현
-        else:
-            print("스킬을 사용할 수 없습니다. 쿨타임이 남아 있습니다.")
-        if self.isalive() and other.isalive(): #생존여부 체크
-            print("\033[32m" + "-" * 15 + " 현재 인형 스탯 " + "-" * 15 + "\033[0m")
-            return
-
+        # else:
+        #     print("스킬을 사용할 수 없습니다. 쿨타임이 남아 있습니다.")
+        # if self.isalive() and other.isalive(): #생존여부 체크
+        #     print("\033[32m" + "-" * 15 + " 현재 인형 스탯 " + "-" * 15 + "\033[0m")
+        #     return
+        pass
     def turnEnd(self):
         if self.buffcheck:
             self.buffduration -= 1  # 버프 지속 시간 감소
             if self.buffduration <= 0:  # 버프 지속 시간이 끝나면
-                self.crt = self.defaultcrt  # 치명률 원래대로 복구
+                #self.crt = self.defaultcrt  # 치명률 원래대로 복구
                 self.buffcheck = False
-                print(f"\033[0m{self.name}의 치명률 버프가 해제되었습니다.\033[0m")
+        if self.nuffcheck:
+            self.nuffduration -= 1  # 버프 지속 시간 감소
+            if self.nuffduration <= 0:  # 버프 지속 시간이 끝나면
+                #self.crt = self.defaultcrt  # 치명률 원래대로 복구
+                self.buffcheck = False
         # 쿨타임 감소 처리
         if self.cool > 0:
             self.cool -= 1
-
     def isalive(self): #생존여부 체크 메소드
         return self.hp > 0
-    def __str__(self): #캐릭터 스탯 반환
-        return (f"{self.name} HP:{self.hp} 스킬 쿨타임: {self.cool}\n"
-                f"공격력 {self.atk}, 방어력 {self.dfs}, 치명률 {self.crt}%, 회피율 {self.avd}%")
-    def statdisplay(self): #스탯 출력
-        print("\033[32m" + "-" * 15 + " 현재 인형 스탯 " + "-" * 15 + "\033[0m")
-    def reset(self):#캐릭터의 체력을 초기 상태로 복원
-        self.hp = self.maxhp
     def clone(self): #캐릭터 선택시 복제
         return copy.deepcopy(self)
-
-def playerTurn(player, opponent, color): #플레이어 턴의 행동 처리
+    def __str__(self): #캐릭터 스탯 반환
+        return (f"{self.name}\n"
+                f"HP : {self.hp}, ATK : {self.atk}, DFS : {self.dfs}\n"
+                f"CRT : {self.crt}, CRD : {self.crd}, AVD : {self.avd}\n"
+                f"DMG : {self.dmg}, PRT : {self.prt}, CSC : {self.cool}\n"
+                f"BUF : {self.buffcheck}, NUF : {self.nuffcheck}")# CSC : current skill cool
+    
+def playerTurn(player, opponent, cursor, color): #플레이어 턴의 행동 처리
     player.passiveSkill()
-    while True:
-        print(f"{color}{player.name}의 턴입니다. 행동을 선택하세요. : \033[0m")
-        print("1. 일반 공격")
-        print("2. 스킬")
-        #print("3. 아이템")
-        choice = input("행동 선택 : ")
-        if choice == "1": #일반 공격 선택
-            player.attack(opponent, color) #일반 공격 실행
-            break
-        #스킬 실행
-        elif choice == "2":  # 스킬 선택
-            if player.cool == 0:  # 쿨타임이 0이면 스킬 발동 가능
-                player.activeSkill(opponent, color)
-                break
-            else:
-                print("스킬을 사용할 수 없습니다. 쿨타임이 남아 있습니다.")
-                # 쿨타임이 남아있으면 메뉴를 다시 출력
-        #아이템 사용
-        else:
-            print("잘못된 입력입니다.") #잘못된 입력 예외 처리
+    if cursor == 0:
+        player.attack(opponent, color)
+    elif cursor == 1:
+        player.activeSkill(opponent, color)
+    elif cursor == 2:
+        pass
+    elif cursor == 3:
+        print(f"{player.name}의 턴을 바로 종료 합니다.")
     player.turnEnd()
 
-def displayStats(player01, player02):
-    print("\033[31m", end="")
-    print(player01)  # 플레이어 1의 스탯 출력
-    print("\033[0m", end="")
-    print("\033[34m", end="")
-    print(player02)  # 플레이어 2의 스탯 출력
-    print("\033[0m", end="")
-    print("\033[32m" + "-" * 50 + "\033[0m")
+#인형 리스트               (인형 이름        , 체력     , 연산량  , 공격력   , 방어력  , 치명률  , 치명피해 , 회피율  , 주피증 , 받피감 , 스킬 쿨타임)
+wr01_PersicaSE = PlayerDoll("페르시카-집도"  , _hp=1200 , _mp=500 , _atk=150 , _dfs=35 , _crt=20 , _crd=70  , _avd=5  , _dmg=0 , _prt=0 ,_cool=7)
+sp01_Antonina  = PlayerDoll("안토니나"       , _hp=1000 , _mp=700 , _atk=120 , _dfs=15 , _crt=30 , _crd=100 , _avd=15 , _dmg=0 , _prt=0 ,_cool=7)
+doll_list = [wr01_PersicaSE, sp01_Antonina]
+player1doll    = PlayerDoll("지능체01"       , _hp=500  , _mp=300 , _atk=55 , _dfs=10 , _crt=25 , _crd=50  , _avd=5  , _dmg=0 , _prt=0 ,_cool=7)
+player2doll    = PlayerDoll("지능체02"       , _hp=550  , _mp=300 , _atk=50 , _dfs=15 , _crt=20 , _crd=70  , _avd=10  , _dmg=0 , _prt=0 ,_cool=7)
+####################################################################################################
+########################################게임 시스템 관련############################################
 
-def battleStart(player01, player02):
-    print("\033[32m" + "=" * 50 + "\033[0m")
-    print("\033[33m전투 시작!\033[0m")
-    print("\033[32m" + "-" * 50 + "\033[0m")
-    
-    # 초기 스탯 출력
-    displayStats(player01, player02)
-    
-    # 전투 루프
-    while player01.isalive() and player02.isalive():
-        playerTurn(player01, player02, "\033[31m")  # 플레이어 1의 턴
+########################################화면 출력 및 루프 관련######################################
+####################################################################################################
+# 타이틀 메뉴 선택 화면
+def title_screen():
+    # 메인 루프
+    title_roop = True
+    select_cursor = 0
+    while title_roop:
+        screen.fill(BLACK)  # 배경을 검은색으로 채우기
+        # 텍스트 위치 계산
+        rect_menu_title = txt_menu_title.get_rect(center=(window_width // 2, window_height // 4))
+        rect_menu_start = txt_menu_start.get_rect(center=(window_width // 2, window_height // 2))
+        rect_menu_quit = txt_menu_quit.get_rect(center=(window_width // 2, window_height // 2 + 70))
+        rect_menu_ctrl = txt_menu_ctrl.get_rect(left=0, bottom=window_height)
+        # 커서 위치 변경
+        if select_cursor == 0:
+            rect_select = txt_menu_select.get_rect(center=(window_width // 2 - 120, window_height // 2))
+        elif select_cursor ==1:
+            rect_select = txt_menu_select.get_rect(center=(window_width // 2 - 120, window_height // 2 + 70))
+        # 글자 디스플레이
+        screen.blit(txt_menu_title, rect_menu_title)
+        screen.blit(txt_menu_start, rect_menu_start)
+        screen.blit(txt_menu_quit, rect_menu_quit)
+        screen.blit(txt_menu_ctrl, rect_menu_ctrl)
+        screen.blit(txt_menu_select, rect_select)
+        # 이벤트 처리
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                title_roop = False
+            # 키보드 이벤트 처리
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_DOWN:
+                    select_cursor = (select_cursor + 1) % 2  # 메뉴 이동 (0 -> 1 또는 1 -> 0)
+                if event.key == pygame.K_UP:
+                    select_cursor = (select_cursor - 1) % 2  # 메뉴 이동 (1 -> 0 또는 0 -> 1)
+                if event.key == pygame.K_z:
+                    if select_cursor == 0:  # 게임 시작 선택
+                        dollselect_screen()
+                    elif select_cursor == 1:  # 게임 종료 선택
+                        title_roop = False
+                if event.key == pygame.K_x:  # X 키로 게임 종료
+                    if select_cursor == 0:
+                        select_cursor = 1
+                    elif select_cursor == 1:
+                        title_roop = False
+        # 화면 업데이트
+        pygame.display.flip()
+
+# 인형 선택 화면
+def dollselect_screen():
+    # 루프 선언
+    dollselect_roop = True
+    select_cursor_vtc = 0
+    select_cursor_hrz01 = 0
+    select_cursor_hrz02 = 0
+    # 글로벌 변수 호출
+    global player1doll
+    global player2doll
+    while dollselect_roop:
+        screen.fill(BLACK)  # 배경을 검은색으로 채우기
+        # 예시 텍스트 (게임 시작 화면)
+        rect_select_doll = txt_select_doll.get_rect(center=(window_width // 2, window_height // 4))
+        screen.blit(txt_select_doll, rect_select_doll)
+        rect_player01 = txt_select_player01.get_rect(center=(window_width // 2 - 200, window_height // 2))
+        screen.blit(txt_select_player01, rect_player01)
+        rect_player02 = txt_select_player02.get_rect(center=(window_width // 2 - 200, window_height // 2 + 100))
+        screen.blit(txt_select_player02, rect_player02)
+
+        if select_cursor_vtc == 0:
+            rect_cursor = txt_select_cursor.get_rect(center=(window_width // 2 + 50, window_height // 2))
+        elif select_cursor_vtc ==1:
+            rect_cursor = txt_select_cursor.get_rect(center=(window_width // 2 + 50, window_height // 2 + 100))
+        elif select_cursor_vtc == 2:
+            rect_cursor = txt_select_cursor.get_rect(center=(window_width // 2 + 50, window_height // 2 + 250))
+        screen.blit(txt_select_cursor, rect_cursor)
         
-        if not player02.isalive():
-            print("\033[32m" + "-" * 50 + "\033[0m")
-            print(f"\033[31m{player01.name}의 승리!\033[0m")
+        txt_doll01 = font30.render(f"{select_cursor_hrz01+1}. {doll_list[select_cursor_hrz01].name}", True, WHITE)
+        rect_doll01 = txt_doll01.get_rect(center=(window_width // 2 + 50, window_height // 2))
+        screen.blit(txt_doll01, rect_doll01)
+        txt_doll02 = font30.render(f"{select_cursor_hrz02+1}. {doll_list[select_cursor_hrz02].name}", True, WHITE)
+        rect_doll02 = txt_doll02.get_rect(center=(window_width // 2 + 50, window_height // 2 + 100))
+        screen.blit(txt_doll02, rect_doll02)
+        rect_finish = txt_select_finish.get_rect(center=(window_width // 2 + 50, window_height // 2 + 250))
+        screen.blit(txt_select_finish, rect_finish)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            # 키보드 이벤트 처리
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_DOWN:
+                    select_cursor_vtc = (select_cursor_vtc + 1) % 3  # 메뉴 이동 (0 -> 1 또는 1 -> 0)
+                if event.key == pygame.K_UP:
+                    select_cursor_vtc = (select_cursor_vtc - 1) % 3  # 메뉴 이동 (1 -> 0 또는 0 -> 1)
+                if event.key == pygame.K_RIGHT:
+                    if select_cursor_vtc == 0: 
+                        select_cursor_hrz01 = (select_cursor_hrz01 + 1) % len(doll_list)  # 메뉴 이동 (0 -> 1 또는 1 -> 0)
+                    elif select_cursor_vtc ==1:
+                        select_cursor_hrz02 = (select_cursor_hrz02 + 1) % len(doll_list)  # 메뉴 이동 (0 -> 1 또는 1 -> 0)
+                if event.key == pygame.K_LEFT:
+                    if select_cursor_vtc == 0: 
+                        select_cursor_hrz01 = (select_cursor_hrz01 - 1) % len(doll_list)  # 메뉴 이동 (0 -> 1 또는 1 -> 0)
+                    elif select_cursor_vtc ==1:
+                        select_cursor_hrz02 = (select_cursor_hrz02 - 1) % len(doll_list)  # 메뉴 이동 (0 -> 1 또는 1 -> 0)
+                if event.key == pygame.K_z:
+                    if select_cursor_vtc != 2:  # 게임 시작 선택
+                        select_cursor_vtc += 1
+                    elif select_cursor_vtc == 2:
+                        player1doll = doll_list[select_cursor_hrz01].clone()
+                        print(player1doll)
+                        player2doll = doll_list[select_cursor_hrz02].clone()
+                        print(player2doll)
+                        print("-" * 15  + "인형 선택 완료" + "-" * 15)
+                        battle_screen()
+                        dollselect_roop = False
+                if event.key == pygame.K_x:  # X 키로 게임 종료
+                    dollselect_roop = False
+        pygame.display.flip()
+# 전투 화면
+def battle_screen():
+    battle_roop = True
+    global player1doll
+    global player2doll
+    print("-" * 15  + "전투 시작!" + "-" * 15)
+    print(player1doll)
+    print(player2doll)
+    select_cursor = 0
+    player_turn = 0
+    global battleLog
+    battleLog = []
+    while battle_roop:
+        screen.fill(BLACK)
+        #rect_test = txt_test.get_rect(center=(window_width // 2, window_height // 2))
+        #screen.blit(txt_test, rect_test)
+        rect_battle01 = txt_battle_act01.get_rect(left=window_width // 5-150, bottom=window_height-5)
+        rect_battle02 = txt_battle_act02.get_rect(left=window_width // 5 * 2 - 100, bottom=window_height-5)
+        #rect_battle03 = txt_battle_act03.get_rect(left=window_width // 5 * 3 - 10, bottom=window_height-5)
+        rect_battle04 = txt_battle_act04.get_rect(left=window_width // 5 * 4 + 50, bottom=window_height-5)
+
+        screen.blit(txt_battle_act01, rect_battle01)
+        screen.blit(txt_battle_act02, rect_battle02)
+        #screen.blit(txt_battle_act03, rect_battle03)
+        screen.blit(txt_battle_act04, rect_battle04)
+        if select_cursor == 0:
+            rect_cursor = txt_menu_select.get_rect(left=window_width // 5-190, bottom=window_height)
+        elif select_cursor ==1:
+            rect_cursor = txt_menu_select.get_rect(left=window_width // 5 * 2 - 135, bottom=window_height)
+        elif select_cursor == 2:
+            rect_cursor = txt_menu_select.get_rect(left=window_width // 5 * 3 - 45, bottom=window_height)
+        elif select_cursor ==3 :
+            rect_cursor = txt_menu_select.get_rect(left=window_width // 5 * 4 + 10, bottom=window_height)
+        screen.blit(txt_menu_select, rect_cursor)
+
+        linegap = 0
+        for log in battleLog:
+            rect_log = log.get_rect(center=(window_width // 2, window_height // 3 * 2 + linegap))
+            screen.blit(log, rect_log)
+            linegap += 30    
+        if len(battleLog) > 5:
+            battleLog.pop(0)
+
+        for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RIGHT:
+                        select_cursor = (select_cursor + 1) % 4  # 메뉴 이동
+                    if event.key == pygame.K_LEFT:
+                        select_cursor = (select_cursor - 1) % 4  # 메뉴 이동
+                        pass
+                    if event.key == pygame.K_z and select_cursor != 2:
+                        if player_turn % 2 == 0:
+                            print(f"{player_turn}턴의 {player1doll.name}의 선택 : {select_cursor}")
+                            if select_cursor != 1 or (select_cursor == 1 and player1doll.cool == 0):
+                                playerTurn(player1doll, player2doll, select_cursor, RED)
+                                player_turn += 1
+                            elif select_cursor == 1 and player1doll.cool != 0:
+                                print(f"현재 {player1doll.name}의 스킬은 쿨타임입니다")
+                                battleLog.append(font30.render(f"현재 {player1doll.name}의 스킬은 쿨타임입니다", True, RED))
+                        elif player_turn % 2 == 1:
+                            print(f"{player_turn}턴의 {player2doll.name}의 선택 : {select_cursor}")
+                            if select_cursor != 1 or (select_cursor == 1 and player2doll.cool == 0):
+                                playerTurn(player2doll, player1doll, select_cursor, BLUE)
+                                player_turn += 1
+                            elif select_cursor == 1 and player1doll.cool != 0:
+                                print(f"현재 {player2doll.name}의 스킬은 쿨타임입니다")
+                                battleLog.append(font30.render(f"현재 {player2doll.name}의 스킬은 쿨타임입니다", True, BLUE))
+                    if event.key == pygame.K_x and (not player1doll.isalive() or not player2doll.isalive()):
+                        battle_roop = False
+        pygame.display.flip()
+        if (not player1doll.isalive()) or (not player2doll.isalive()):
             break
-        
-        displayStats(player01, player02)  # 턴 후 스탯 출력
-        
-        playerTurn(player02, player01, "\033[34m")  # 플레이어 2의 턴
-        
-        if not player01.isalive():
-            print("\033[32m" + "-" * 50 + "\033[0m")
-            print(f"\033[34m{player02.name}의 승리!\033[0m")
-            break
-        
-        displayStats(player01, player02)  # 턴 후 스탯 출력
+    win_roop = True
+    print("승리!")
+    screen.fill(BLACK)
+    if not player1doll.isalive():
+        print(f"{player2doll.name}의 승리!")
+        while win_roop:
+            txt_win = font40.render(f"{player2doll.name}의 승리!", True, BLUE)
+            rect_win = txt_win.get_rect(center=(window_width // 2, window_height // 2))
+            screen.blit(txt_win, rect_win)
+            txt_end = font20.render(f"메인 메뉴로 돌아가려면 X를 누르세요.", True, WHITE)
+            rect_end = txt_end.get_rect(left=0, bottom=window_height)
+            screen.blit(txt_end, rect_end)
+            pygame.display.flip()
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_x:
+                            win_roop = False
+    elif not player2doll.isalive():
+        print(f"{player1doll.name}의 승리!")
+        while win_roop:
+            txt_win = font40.render(f"{player1doll.name}의 승리!", True, RED)
+            rect_win = txt_win.get_rect(center=(window_width // 2, window_height // 2))
+            screen.blit(txt_win, rect_win)
+            txt_end = font20.render(f"메인 메뉴로 돌아가려면 X를 누르세요.", True, WHITE)
+            rect_end = txt_end.get_rect(left=0, bottom=window_height)
+            screen.blit(txt_end, rect_end)
+            pygame.display.flip()
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_x:
+                            win_roop = False
+####################################################################################################
+########################################화면 출력 및 루프 관련######################################
 
-def selectDoll(): #인형 선택 함수
-    dollList = [
-        wr01_Sol,
-        gd01_Croque,
-        sn01_Clukay,
-        sp01_Luna,
-        md01_Persica,
-        etc01_memeko
-    ]
-    #dollList.sort()
-    print("인형을 선택하세요 : ")
-    for i, doll in enumerate(dollList, 1): #인형 리스트 출력
-        print(f"{i}. {doll.name}")
-    while True:
-        choice = input("인형 선택 : ")
-        if choice.isdigit() and 1 <= int(choice) <= len(dollList):
-            return dollList[int(choice) - 1].clone() #선택한 인형 반환
-        else:
-            print("잘못된 입력입니다.") #잘못된 입력 예외 처리
 
-
-def print_with_color(message, color_code):#색상 출력 관련 함수
-    print(f"{color_code}{message}\033[0m")
-
-def main(): #메인 메뉴 함수
-    while True:
-        print("\033[32m" + "=" * 50 + "\033[0m")
-        print("\033[33m 뉴럴 클라우드 정실 대전 240816beta \033[0m")
-        print("")
-        print("")
-        print("1. 정실 대전 시작")
-        print("")
-        print("2. 게임 종료")
-        print("")
-        print("")
-        print("\033[32m" + "=" * 50 + "\033[0m")
-        
-        choice = input("메뉴 선택: ")
-        if choice == "1":
-            print("\033[32m" + "=" * 50 + "\033[0m")
-            print("\033[31m", end="") #플레이어01 = 빨간색
-            print("플레이어 1의 인형 선택:")
-            print("\033[0m", end="")
-            player1 = selectDoll() #플레이어01 캐릭터 선택
-            print("\033[31m", end="")
-            print(f"플레이어 1이 {player1.name}을(를) 선택했습니다.")
-            print("\033[0m", end="")
-            print("\033[34m", end="") #플레이어02 = 파란색
-            print("\033[32m" + "=" * 50 + "\033[0m")
-            print("플레이어 2의 캐릭터 선택:")
-            print("\033[0m", end="")
-            player2 = selectDoll() #플레이어02 캐릭터 선택
-            print("\033[34m", end="") #플레이어02 = 파란색
-            print(f"플레이어 2가 {player2.name}을(를) 선택했습니다.")
-            print("\033[0m", end="")
-            
-            battleStart(player1, player2) #정실 대전 시작
-        elif choice == "2": #게임 종료
-            print("게임을 종료합니다.")
-            break
-        else:
-            print("잘못된 입력입니다.") #잘못된 입력 예외 처리
-
-#인형 리스트             (인형 이름, 체력     , 연산력 , 공격력  , 방어력 , 치명률 , 치명피해, 회피율, 스킬 쿨타임)
-wr01_Sol     = PlayerDoll("솔"      , _hp=800 , _mp=300 , _atk=100, _dfs=20, _crt=20, _crd=50 , _avd=5 , _cool=7)
-gd01_Croque  = PlayerDoll("크로크"  , _hp=1000, _mp=300 , _atk=70 , _dfs=40, _crt=15, _crd=50 , _avd=10, _cool=6)
-sn01_Clukay  = PlayerDoll("클루카이", _hp=750 , _mp=400 , _atk=90 , _dfs=10, _crt=30, _crd=100, _avd=5 , _cool=5)
-sp01_Luna    = PlayerDoll("보름"    , _hp=700 , _mp=500 , _atk=80 , _dfs=15, _crt=50, _crd=80 , _avd=25, _cool=5)
-sp02_Sakuya  = PlayerDoll("사쿠야"  , _hp=700 , _mp=500 , _atk=90 , _dfs=20, _crt=30, _crd=50 , _avd=20, _cool=5)
-md01_Persica = PlayerDoll("페르시카", _hp=600 , _mp=700 , _atk=70 , _dfs=10, _crt=10, _crd=100, _avd=10, _cool=5)
-etc01_memeko = PlayerDoll("메메코"  , _hp=3000, _mp=1000, _atk=10 , _dfs=70, _crt=1 , _crd=999, _avd=1 , _cool=999)
-
-#게임 시작
+########################################메인 함수###################################################
+####################################################################################################
+def main():
+    title_screen()
+    # pygame 종료
+    pygame.quit()
+    sys.exit()
 main()
+####################################################################################################
+########################################메인 함수###################################################
