@@ -36,11 +36,12 @@ txt_battle_act03 = font30.render("궁극 스킬", True, WHITE)
 txt_battle_act04 = font30.render("턴 종료", True, WHITE)
 statusList = []
 def statDisplay(player, pnum, color):
-    pygame.draw.rect(screen, color, [window_width - (window_width / pnum ) + (window_width/5), 50, 80, 140])
-    txt_tmp = font20.render("*캐릭터 이미지 삽입", True, WHITE)
-    rect_tmp = txt_tmp.get_rect(left=(window_width - (window_width / pnum ) + (window_width/5)), bottom=50)
-    screen.blit(txt_tmp, rect_tmp)
-
+    #pygame.draw.rect(screen, color, [window_width - (window_width / pnum ) + (window_width/5), 50, 80, 140])
+    #txt_tmp = font20.render("*캐릭터 이미지 삽입", True, WHITE)
+    #rect_tmp = txt_tmp.get_rect(left=(window_width - (window_width / pnum ) + (window_width/5)), bottom=50)
+    #screen.blit(txt_tmp, rect_tmp)
+    eraserDisplay(player.name, window_width - (window_width / pnum ) + (window_width/5), 50)
+    
     statusList.append(font24.render(f"    P{pnum} - {player.name}", True, color))
     statusList.append(font24.render(f"            현재 체력 : [ {player.hp} / {player.maxhp} ]", True, WHITE))
     now = int(player.hp / player.maxhp * 20)
@@ -65,6 +66,15 @@ def statDisplay(player, pnum, color):
     pass
 battleLog = []
 player_turn = 0
+# 인형 이미지 출력
+def eraserDisplay(name, x, y):
+    erasers = {
+    "페르시카-집도": pygame.image.load("persica.png"),
+    "안토니나": pygame.image.load("antonina.png")
+    }
+    eraser = pygame.transform.scale(erasers[name], (75, 140))
+    screen.blit(eraser, (x, y))
+    pass
 # 화면 설정
 window_width = 1150
 window_height = 720
@@ -187,7 +197,7 @@ class PlayerDoll:
             global player_turn
             if self.name == "페르시카-집도":
                 sk_damage = int((self.atk * (0.9 + rd.random() * 0.2)))
-                sk_damage = int(sk_damage * 0.3)
+                sk_damage = int(sk_damage * 0.4)
                 sk_damage = int((sk_damage - other.dfs) * (1 + self.dmg / 100) * (1- other.prt / 100))
                 mindam = sk_damage * 0.05
                 if sk_damage < mindam: #최소 데미지 보정
@@ -212,6 +222,7 @@ class PlayerDoll:
                     player_turn += 1
                     print(f"{self.name}의 데이터 침식 발동! 적의 턴을 침식시켰다. {self.name}의 턴!")
                     battleLog.append(font24.render(f"{self.name}의 데이터 침식 발동! 적의 턴을 침식시켰다. {self.name}의 턴!", True, color))
+        self.cool = self.defaultcool
         pass
     def turnEnd(self):
         if self.buffcheck:
@@ -421,7 +432,7 @@ def battle_screen():
             rect_log = log.get_rect(center=(window_width // 2, window_height // 3 * 2 + linegap))
             screen.blit(log, rect_log)
             linegap += 35  
-        if len(battleLog) > 5:
+        if len(battleLog) > 6:
             battleLog.pop(0)
 
         txt_turn = font24.render("◀ 현재 턴", True, (230, 230, 10))
