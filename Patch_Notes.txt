@@ -38,3 +38,45 @@
     - 스택형 스킬 기능 추가
     - 턴당 지속 데미지 스킬 기능 추가
 3. 기타 버그 수정
+
+
+Version 20240914
+1. Completed creation of 3 playable characters (Persica, Antonina, Clukay).
+2. Implemented Antonina’s "Data Corrosion" ability (neutralizes the opponent's turn).
+3. Standardized skill messages:
+    - Passive skills: Period.
+    - Active skills: One exclamation mark.
+    - Ultimate: Two exclamation marks.
+4. Various bug fixes.
+
+Version 20240919
+1. Expanded to 6 playable characters:
+    - Persica
+      * Passive: Deals small damage at the start of combat and at certain intervals.
+      * Active: Attacks five times.
+      * Ultimate: Powerful defense-piercing attack.
+    - Antonina
+      * Passive: Low chance to incapacitate the enemy.
+      * Active: Deals damage, has a chance to incapacitate the enemy, strengthens passive for one turn.
+      * Ultimate: Guarantees enemy incapacitation, strengthens passive for three turns.
+    - Clukay
+      * Passive: Chance of an extra attack when performing a basic attack.
+      * Active: Defense-piercing attack.
+      * Ultimate: Powerful five-hit attack.
+    - De Lacey
+      * Passive: Recovers small health each turn (deals extra damage to Persica).
+      * Active: Deals damage over time and heals self each turn.
+      * Ultimate: Deals damage over three turns at the start of each turn and heals self.
+    - Luna
+      * Passive: Deals extra damage after a certain number of attacks.
+      * Active: Attacks 3 to 5 times.
+      * Ultimate: Attacks 7 to 10 times and permanently enhances passive.
+    - Clotho
+      * Passive: Chance to increase defense.
+      * Active: Defense-based attack and deals extra damage during a certain number of turns when attacking.
+      * Ultimate: Consumes passive stacks to deal powerful continuous damage.
+2. Added new features:
+    - More detailed passive skill activation timing (activated at the start of the turn or after action selection).
+    - Added stackable skills.
+    - Added skills that deal continuous damage per turn.
+3. Various bug fixes.
